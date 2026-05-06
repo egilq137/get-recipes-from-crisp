@@ -6,7 +6,10 @@ from pathlib import Path
 from datetime import datetime
 from clean_up_recipes_txt import clean_up_text
 from fpdf import FPDF
+from dotenv import load_dotenv
+import os
 
+load_dotenv()
 @dataclass
 class Recipe:
     """
@@ -21,24 +24,32 @@ class Recipe:
 
     def estimate_cooking_time(self) -> int:
         """ prompts Gemini to get an estimated prep and cooking time in minutes"""
-        # todo: move to another file
-        api_key = 'AIzaSyC7Is9A9WsLTGMShOdoUZCxiaAtzU5_tgg'
+        api_key = os.getenv('GOOGLE_API_KEY')
         client = genai.Client(api_key=api_key)
         
 
-        prompt = f"Given the following recipe steps, estimate the total amount of \
-            time in minutes, including all tasks, such as washing vegetables, \
-        heating up the oven, etc. Duplicate all the amounts, the recipe is \
-        written for 2 meals, but it should be 4.\
-        Return only the time in minutes, if there is a range, take the highest \
-        estimated number. Recipe: {self.combine_steps()}"
+        prompt = f"""You are a precise cooking time estimator. Follow these rules strictly:
+
+        - Count EVERY task: prep (washing, chopping, peeling), heating appliances, cooking, resting time
+        - For ranges, always use the MAXIMUM value
+        - The recipe serves 4 (double all quantities from the original 2-serving recipe)
+        - Use these benchmarks:
+            * Oven preheat: 10 min
+            * Boiling water: 5 min
+            * Chopping one vegetable: 3 min
+            * Washing vegetables: 2 min per item
+
+        Recipe steps:
+        {self.combine_steps()}
+
+        Return the total time in minutes as a single integer."""
 
         print('Estimating cooking time with Gemini...')
         try:
             response = client.models.generate_content(
                 model="gemini-2.5-flash-lite", contents=prompt,
                 config={
-                    "temperature": 0.5,
+                    "temperature": 0.1,
                     "response_mime_type": "application/json",
                     "response_json_schema": {
                         "type": "OBJECT",
@@ -47,8 +58,9 @@ class Recipe:
                     }
                 }
                 )
-        except:
-            print('Bad response from Gemini')
+        except Exception as e:
+            print(f'Bad response from Gemini: {e}')
+            os.abort()
             return
         
         try:
