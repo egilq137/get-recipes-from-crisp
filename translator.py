@@ -1,13 +1,15 @@
 import deepl
-
 from models import Recipe
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 class DeepLTranslator:
     """ receives a meal in Dutch and translates it into English """
 
     # class attributes
-    # todo: move to a different file
-    api_key = "91d42cc3-9115-4033-bf03-4bd9887b4ec9:fx"
+    api_key = os.getenv("DEEPL_API_KEY")
     deepl_client = deepl.DeepLClient(api_key) 
 
     def __init__(
