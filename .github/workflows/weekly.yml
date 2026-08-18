@@ -15,7 +15,12 @@ concurrency:
 jobs:
   send:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # Generous headroom: apt (Firefox's OS-level deps: fonts, codec libs) is fetched
+    # fresh from Ubuntu's mirror on every run since GitHub-hosted runners don't persist
+    # OS state between runs, and that mirror is occasionally slow (individual small
+    # packages have been observed taking minutes). The retry loop below handles a truly
+    # stuck attempt; this ceiling just gives a slow-but-progressing mirror room to finish.
+    timeout-minutes: 30
 
     steps:
       - uses: actions/checkout@v4
@@ -28,8 +33,27 @@ jobs:
       - name: Install dependencies
         run: uv sync
 
+      - name: Cache Playwright browser binaries
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-firefox-${{ runner.os }}-${{ hashFiles('uv.lock') }}
+
       - name: Install Playwright Firefox
-        run: uv run playwright install --with-deps firefox
+        # apt's mirror occasionally stalls on individual packages (observed: several
+        # minutes for a single few-MB file). Retry a few times with a per-attempt
+        # timeout rather than let one stuck download consume the whole job budget.
+        run: |
+          for attempt in 1 2 3; do
+            echo "Attempt $attempt..."
+            if timeout 12m uv run playwright install --with-deps firefox; then
+              exit 0
+            fi
+            echo "Attempt $attempt failed or timed out; retrying..."
+            sleep 15
+          done
+          echo "All attempts failed."
+          exit 1
 
       - name: Run the pipeline
         env:
