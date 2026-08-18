@@ -1,0 +1,55 @@
+name: Weekly recipes
+
+on:
+  schedule:
+    # Wednesday 07:00 UTC — crisp.nl has published the coming week's box by then,
+    # leaving time to plan before delivery.
+    - cron: "0 7 * * 3"
+  workflow_dispatch:        # lets you trigger a run by hand from the Actions tab
+
+# Avoid two runs overlapping if a manual run is triggered near the schedule.
+concurrency:
+  group: weekly-recipes
+  cancel-in-progress: false
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Install Playwright Firefox
+        run: uv run playwright install --with-deps firefox
+
+      - name: Run the pipeline
+        env:
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          DEEPL_API_KEY: ${{ secrets.DEEPL_API_KEY }}
+          USDA_FDC_API_KEY: ${{ secrets.USDA_FDC_API_KEY }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
+          RECIPIENTS: ${{ secrets.RECIPIENTS }}
+          # Optional overrides (safe to leave unset):
+          CRISP_BOX: ${{ vars.CRISP_BOX }}
+          TARGET_PORTIONS: ${{ vars.TARGET_PORTIONS }}
+        run: uv run python -m crisp_recipes
+
+      - name: Upload generated PDFs
+        # Keeps a copy in the run's artifacts even if the email fails to send.
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: recipes
+          path: recipes/
+          if-no-files-found: ignore
+          retention-days: 30
