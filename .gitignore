@@ -1,4 +1,21 @@
 .python-version
-__pycache__/
 
+# Secrets
 .env
+
+# Generated output (recipes are emailed, not committed)
+recipes/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
