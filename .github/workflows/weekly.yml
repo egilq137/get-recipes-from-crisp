@@ -39,21 +39,35 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-firefox-${{ runner.os }}-${{ hashFiles('uv.lock') }}
 
-      - name: Install Playwright Firefox
-        # apt's mirror occasionally stalls on individual packages (observed: several
-        # minutes for a single few-MB file). Retry a few times with a per-attempt
-        # timeout rather than let one stuck download consume the whole job budget.
+      - name: Install Firefox system dependencies
+        # Two failure modes have bitten this step, both fixed here:
+        #
+        # 1. The azure.archive.ubuntu.com mirror intermittently stops responding
+        #    ("Ign:" on every index), so apt-get update hangs indefinitely. We point
+        #    apt at archive.ubuntu.com, which kept working in the same runs where the
+        #    Azure mirror was being ignored.
+        # 2. A plain `timeout` only signals its direct child. The chain here is
+        #    timeout -> playwright -> sudo -> apt-get, and sudo does not forward the
+        #    signal to the root-owned apt-get, so the killed attempt left an orphan
+        #    holding /var/lib/apt/lists/lock and every later retry died on the lock in
+        #    under a second. Running timeout under sudo with --signal=KILL, plus
+        #    clearing stale locks, makes the retries actually independent.
         run: |
+          sudo sed -i 's|azure.archive.ubuntu.com|archive.ubuntu.com|g' /etc/apt/sources.list.d/ubuntu.sources || true
           for attempt in 1 2 3; do
-            echo "Attempt $attempt..."
-            if timeout 12m uv run playwright install --with-deps firefox; then
-              exit 0
-            fi
-            echo "Attempt $attempt failed or timed out; retrying..."
+            echo "apt-get update attempt $attempt..."
+            sudo timeout --signal=KILL 4m apt-get update && break
+            echo "apt-get update stalled; clearing locks before retry."
+            sudo pkill -9 -x apt-get || true
+            sudo rm -f /var/lib/apt/lists/lock /var/lib/dpkg/lock-frontend
             sleep 15
           done
-          echo "All attempts failed."
-          exit 1
+          uv run playwright install-deps firefox
+
+      - name: Install Playwright Firefox
+        # Separate from the apt work above: on a cache hit this is a no-op, so a slow
+        # mirror can no longer block a browser that is already on disk.
+        run: uv run playwright install firefox
 
       - name: Run the pipeline
         env:
