@@ -5,7 +5,7 @@ meal box — in Dutch, for 2 portions, with no nutrition information.
 
 This job runs once a week on GitHub Actions and emails you those recipes:
 
-- **translated** to English (DeepL),
+- **translated** to English: steps by Gemini with checks that reject any step whose numbers or length don't match the Dutch (those fall back to DeepL); title and ingredient names by DeepL,
 - with the **ingredient list scaled** to the portion count you actually cook (default
   4); the steps keep crisp.nl's own amounts and say which portion count they're for,
 - with a **nutrition table** per serving (macros, 10 minerals, 11 vitamins) from
@@ -28,7 +28,7 @@ scrape → scale amounts → translate → nutrition → times → chef's notes 
 |---|---|
 | `scraper.py` | Playwright; finds the box's 3 recipes, extracts title, portions, ingredients (with amounts) and steps |
 | `models.py` | Pure dataclasses + amount arithmetic (unicode fractions, scaling) |
-| `translator.py` | DeepL, batched per recipe; ingredient names get a disambiguating suffix |
+| `translator.py` | DeepL for title and ingredient names; Gemini for steps, with guardrails and per-step DeepL fallback |
 | `nutrition.py` | Gemini estimates grams → USDA lookup with candidate scoring → aggregation |
 | `nutrients.py` | The 28 tracked nutrients: labels, units, USDA ids, daily values |
 | `cooking_time.py` | Official time from the site + prep-aware realistic estimate |
@@ -122,7 +122,8 @@ deployments → Edit → New version** to keep the same URL.
 |---|---|---|
 | `CRISP_BOX` | `vegan` | which weekbox to scrape |
 | `TARGET_PORTIONS` | `4` | portions the amounts are written for; set `2` to keep the site's |
-| `TARGET_LANG` | `EN-GB` | DeepL target language |
+| `TARGET_LANG` | `EN-GB` | target language |
+| `STEP_TRANSLATOR` | `gemini` | `gemini` (checked, DeepL fallback) or `deepl` for the steps |
 | `SITE_DIR` | — | publish the week to this folder (CI sets `site`) |
 | `RATINGS_API_URL` | — | Apps Script web-app URL the website saves ratings to |
 

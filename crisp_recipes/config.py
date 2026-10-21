@@ -69,6 +69,9 @@ class Settings:
     # Scraping / behavior
     crisp_box: str = "vegan"
     target_lang: str = "EN-GB"
+    # Who translates the steps: "gemini" (checked, with per-step DeepL fallback) or
+    # "deepl". Title and ingredient names always go to DeepL.
+    step_translator: str = "gemini"
     # How many portions the output should be written for. crisp.nl publishes amounts
     # for 2; the scraper asks the site for this many and falls back to scaling.
     target_portions: int = 4
@@ -93,6 +96,7 @@ class Settings:
             recipients=_split_recipients(_require("RECIPIENTS")),
             crisp_box=_optional("CRISP_BOX", "vegan"),
             target_lang=_optional("TARGET_LANG", "EN-GB"),
+            step_translator=_optional("STEP_TRANSLATOR", "gemini").lower(),
             target_portions=int(_optional("TARGET_PORTIONS", "4")),
             site_dir=_optional("SITE_DIR", ""),
             ratings_api_url=_optional("RATINGS_API_URL", ""),
