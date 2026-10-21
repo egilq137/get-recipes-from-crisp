@@ -57,6 +57,18 @@ def cooking_time_label(recipe: Recipe) -> str:
     return "time n/a"
 
 
+def preparation_heading(recipe: Recipe) -> str:
+    """'Preparation', noting the portion count when the steps differ from the list.
+
+    Steps keep crisp.nl's own amounts, so when the ingredient list was scaled the
+    heading says which portion count the step amounts are for.
+    """
+    source, display = recipe.source_portions, recipe.display_portions
+    if source and display and source != display:
+        return f"Preparation (amounts in steps are for {source} servings, as on crisp.nl)"
+    return "Preparation"
+
+
 def format_daily_value(value: Optional[float], spec) -> str:
     """Percent of the 2000 kcal Daily Value this amount represents, e.g. '54%'.
 
@@ -185,7 +197,7 @@ def _recipe_html(recipe: Recipe) -> str:
     if recipe.chef_notes:
         tips = "".join(f"<li>{html.escape(n)}</li>" for n in recipe.chef_notes)
         chef = (
-            '<h3>👩‍🍳 Chef\'s notes (cooking for two)</h3>'
+            '<h3>👩‍🍳 Chef\'s notes &amp; cookware</h3>'
             f'<ul class="chef">{tips}</ul>'
         )
     return f"""
@@ -196,7 +208,7 @@ def _recipe_html(recipe: Recipe) -> str:
       {_nutrition_table_html(recipe)}
       <h3>Ingredients (for {portions} servings)</h3>
       <ul>{ingredients}</ul>
-      <h3>Preparation</h3>
+      <h3>{html.escape(preparation_heading(recipe))}</h3>
       <ol class="steps">{steps}</ol>
       {chef}
     </div>
@@ -329,7 +341,7 @@ class RecipePdf:
     def _steps(self, recipe: Recipe) -> None:
         from fpdf.enums import XPos, YPos
 
-        self._heading("Preparation")
+        self._heading(preparation_heading(recipe))
         self.pdf.set_font("DejaVu", "", 10)
         for step in recipe.steps:
             self.pdf.multi_cell(0, 5.5, step, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
@@ -340,7 +352,7 @@ class RecipePdf:
 
         if not recipe.chef_notes:
             return
-        self._heading("Chef's notes (cooking for two)")
+        self._heading("Chef's notes & cookware")
         pdf = self.pdf
         pdf.set_font("DejaVu", "", 10)
         for note in recipe.chef_notes:

@@ -6,15 +6,17 @@ meal box — in Dutch, for 2 portions, with no nutrition information.
 This job runs once a week on GitHub Actions and emails you those recipes:
 
 - **translated** to English (DeepL),
-- **scaled** to the portion count you actually cook (default 4) — ingredients *and*
-  the amounts written inside the steps,
+- with the **ingredient list scaled** to the portion count you actually cook (default
+  4); the steps keep crisp.nl's own amounts and say which portion count they're for,
 - with a **nutrition table** per serving (macros, 10 minerals, 11 vitamins) from
   **USDA FoodData Central**, including the share of a 2000 kcal daily requirement,
 - a **realistic cooking time** that accounts for prep, not just the site's active time,
-- and **chef's notes** on splitting the cooking between two people, cross-referenced to
-  the step numbers.
+- and **chef's notes** on which of your cookware each step needs and what can run in
+  parallel on the spare equipment, cross-referenced to the step numbers.
 
-You get one HTML email with a PDF per recipe attached.
+You get one HTML email with a PDF per recipe attached, and every week is added to a
+**recipe website** where you and others can rate each dish (how much you liked it, how
+easy it was), mark favourites and leave notes — no account needed.
 
 ## How it works
 
@@ -30,16 +32,18 @@ scrape → scale amounts → translate → nutrition → times → chef's notes 
 | `nutrition.py` | Gemini estimates grams → USDA lookup with candidate scoring → aggregation |
 | `nutrients.py` | The 28 tracked nutrients: labels, units, USDA ids, daily values |
 | `cooking_time.py` | Official time from the site + prep-aware realistic estimate |
-| `chef_notes.py` | Senior-chef tips for two cooks, with step references |
+| `chef_notes.py` | Senior-chef tips: cookware per step and what can run in parallel, with step references |
 | `render.py` | HTML email body and per-recipe PDFs |
+| `site.py` | Recipe website: per-week recipe pages + PDFs, rebuilt index |
+| `site_assets/` | The website's ratings app (plain HTML/CSS/JS) |
+| `apps_script/Code.gs` | Ratings API: a Google Apps Script web app over a Google Sheet |
 | `pipeline.py` | Orchestration |
 
 A few design notes worth knowing:
 
-- **Scaling happens before translation.** The unit allowlist and "amount directly
-  followed by a unit" word order only hold in the Dutch source text — DeepL rewrites
-  `¾ zakje kaas` as `¾ of a bag of cheese`. Only food quantities are scaled; oven
-  temperatures, times and thicknesses are left alone.
+- **Only the ingredient list is scaled.** Rewriting numbers inside step text was
+  error-prone (`1el bij 2p` became `2el bij 2p`), so steps keep the site's wording and
+  their heading names the portion count the amounts are for.
 - **Nutrition is per serving.** Totals scale with the batch, per-serving figures don't.
 - **A wrong USDA match is worse than none.** Candidates must contain the query's
   identity words, so `cumin, ground` can't match `Chicken, ground`. Unmatched
@@ -88,6 +92,30 @@ Optionally, under **Variables**: `CRISP_BOX` (`vegan`, `vega`, `weekbox`, `snell
 Generated PDFs are also uploaded as run artifacts, so you can retrieve them even if the
 email fails.
 
+## Recipe website
+
+The weekly job publishes to the `gh-pages` branch, which GitHub Pages serves at
+`https://<user>.github.io/<repo>/`. Past weeks stay; a re-run replaces that week.
+Ratings are stored in a Google Sheet you own, through a small Apps Script web app, so
+people rate with just a name — no Google or GitHub account needed.
+
+One-time setup:
+
+1. **Ratings sheet.** Create a Google Sheet, open **Extensions → Apps Script**, replace
+   the code with [`apps_script/Code.gs`](apps_script/Code.gs) and save.
+2. **Deploy it.** **Deploy → New deployment → Web app**, *Execute as:* Me, *Who has
+   access:* Anyone. Authorize, then copy the web-app URL (ends in `/exec`).
+3. **Tell the site.** In the repo, **Settings → Secrets and variables → Actions →
+   Variables**, add `RATINGS_API_URL` with that URL.
+4. **Run the workflow once** (Actions → Weekly recipes → Run workflow). It creates the
+   `gh-pages` branch.
+5. **Turn on Pages.** **Settings → Pages → Build and deployment**: *Deploy from a
+   branch*, branch `gh-pages`, folder `/ (root)`.
+
+Ratings appear as rows in the sheet's `ratings` tab (one per person per recipe), so you
+can fix or delete one by hand. If you edit `Code.gs` later, use **Deploy → Manage
+deployments → Edit → New version** to keep the same URL.
+
 ## Configuration
 
 | Variable | Default | Meaning |
@@ -95,6 +123,8 @@ email fails.
 | `CRISP_BOX` | `vegan` | which weekbox to scrape |
 | `TARGET_PORTIONS` | `4` | portions the amounts are written for; set `2` to keep the site's |
 | `TARGET_LANG` | `EN-GB` | DeepL target language |
+| `SITE_DIR` | — | publish the week to this folder (CI sets `site`) |
+| `RATINGS_API_URL` | — | Apps Script web-app URL the website saves ratings to |
 
 ## Tests
 
@@ -118,5 +148,6 @@ selectors drifted.
 
 - Ingredient weights are LLM estimates; unusual pantry items ("to taste") are guesses.
 - USDA matching is good but not perfect — check the food shown next to each ingredient.
-- Inline prose references such as `(1 tbsp per 2 people)` have their quantity scaled but
-  not the "2 people" part.
+- The recipe website is public to anyone with its URL (it's marked `noindex`, so search
+  engines skip it), and so is the ratings API. Fine for friends and family; don't post
+  the link publicly.

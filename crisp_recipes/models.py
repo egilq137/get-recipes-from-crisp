@@ -5,7 +5,6 @@ email all live in their own modules and operate on these objects.
 """
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass, field, replace
 from fractions import Fraction
 from typing import Dict, List, Optional
@@ -84,60 +83,6 @@ UNIT_LABELS_EN = {
     "el": "tbsp", "eetlepel": "tbsp", "eetlepels": "tbsp",
     "tl": "tsp", "theelepel": "tsp", "theelepels": "tsp",
 }
-
-
-# Units that denote a QUANTITY OF FOOD and may safely be multiplied when scaling a
-# recipe. Deliberately an allowlist: step text also contains numbers that must never be
-# scaled — oven temperatures ("200 graden"), thicknesses ("0.5 cm"), times ("15-20
-# minuten"), and serving references ("1el bij 2p"). Anything not listed here is left
-# exactly as written.
-SCALABLE_UNITS = {
-    "g", "gr", "gram", "kg", "mg", "ml", "cl", "dl", "l", "liter",
-    "el", "eetlepel", "eetlepels", "tl", "theelepel", "theelepels",
-    "stuk", "stuks", "zakje", "zak", "bakje", "bak", "pakje", "pak",
-    "blik", "blikje", "bol", "bosje", "bos", "stengel", "stengels",
-    "kropje", "krop", "teen", "teentje", "tenen", "snuf", "snufje",
-    "handje", "plak", "plakken", "plakje", "pot", "potje", "fles", "blaadje",
-}
-
-_AMOUNT_TOKEN = r"[0-9]+(?:[.,][0-9]+)?[¼½¾⅐⅑⅒⅓⅔⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞]?|[¼½¾⅐⅑⅒⅓⅔⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞]"
-
-
-def scale_amounts_in_text(text: str, factor: "Fraction", ingredient_names=None) -> str:
-    """Multiply food quantities inside step text by `factor`, leaving everything else
-    (temperatures, times, sizes, serving notes) untouched.
-
-    Only two patterns are scaled:
-      1. an amount directly followed by a unit from `SCALABLE_UNITS` ("400 g", "½ tl"),
-      2. an amount directly followed by a known ingredient name ("1½ tomaten"), which
-         covers crisp's unit-less amounts.
-    """
-    if factor == 1:
-        return text
-
-    heads = set()
-    for name in ingredient_names or []:
-        for word in re.findall(r"[^\W\d_]+", name.lower()):
-            if len(word) > 2:
-                heads.add(word)
-
-    unit_alt = "|".join(sorted(map(re.escape, SCALABLE_UNITS), key=len, reverse=True))
-    pattern = re.compile(
-        rf"(?<![\w.,])({_AMOUNT_TOKEN})(\s*)((?:{unit_alt})\b|[^\W\d_]+)",
-        re.IGNORECASE,
-    )
-
-    def repl(m: "re.Match") -> str:
-        amount, gap, word = m.group(1), m.group(2), m.group(3)
-        is_unit = word.lower() in SCALABLE_UNITS
-        if not is_unit and word.lower() not in heads:
-            return m.group(0)          # not a food quantity — leave alone
-        value = parse_amount(amount)
-        if value is None:
-            return m.group(0)
-        return f"{format_amount_value(value * factor)}{gap}{word}"
-
-    return pattern.sub(repl, text)
 
 
 @dataclass
@@ -271,14 +216,12 @@ class Recipe:
         return self.nutrition_total.scaled(1 / n)
 
     def scaled_to_portions(self, target_portions: int) -> "Recipe":
-        """Return a copy with the *displayed* amounts scaled to `target_portions`.
+        """Return a copy with the ingredient amounts scaled to `target_portions`.
 
-        Both the ingredient list and the inline amounts inside the steps are scaled, so
-        the instructions you cook from are internally consistent.
-
-        Call this on the original Dutch text, before translation: the unit allowlist and
-        the "amount directly followed by unit" word order only hold in the source text
-        (DeepL rewrites "¾ zakje kaas" as "¾ of a bag of cheese").
+        Only the ingredient list is scaled. The steps keep crisp.nl's own wording and
+        amounts (for `source_portions`): rewriting numbers inside free text proved
+        error-prone ("1el bij 2p" became "2el bij 2p"), and a step that silently
+        disagrees with what's in the box causes more mistakes than it prevents.
 
         Nutrition is computed afterwards from these amounts and divided by
         `portions_for_amounts`, so per-serving figures are unaffected by the batch size.
@@ -287,11 +230,9 @@ class Recipe:
         if not current or not target_portions or current == target_portions:
             return self
         factor = Fraction(target_portions, current)
-        names = [i.name for i in self.ingredients]
         return replace(
             self,
             ingredients=[i.scaled(factor) for i in self.ingredients],
-            steps=[scale_amounts_in_text(s, factor, names) for s in self.steps],
             display_portions=target_portions,
         )
 

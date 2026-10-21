@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Our Crisp Recipes</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <h1>Our Crisp recipes</h1>
+    <label class="who">
+      <span>Rating as</span>
+      <input id="name" type="text" maxlength="40" placeholder="Your name" autocomplete="nickname">
+    </label>
+  </header>
+
+  <div id="notice" class="notice" hidden></div>
+
+  <div class="controls">
+    <input id="search" type="search" placeholder="Search recipes…" aria-label="Search recipes">
+    <select id="view" aria-label="Show">
+      <option value="all">All recipes</option>
+      <option value="favourites">Favourites</option>
+      <option value="unrated">Not rated by me</option>
+    </select>
+    <select id="sort" aria-label="Sort by">
+      <option value="newest">Newest first</option>
+      <option value="liked">Most liked</option>
+      <option value="easy">Easiest</option>
+      <option value="best">Easy &amp; loved</option>
+    </select>
+  </div>
+
+  <main id="list" aria-live="polite"><p class="empty">Loading…</p></main>
+
+  <div id="toast" class="toast" role="status" hidden></div>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

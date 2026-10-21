@@ -1,30 +1,52 @@
-"""Senior-chef notes: how two people should tackle a recipe together.
+"""Senior-chef notes: practical tips for cooking a recipe in *our* kitchen.
 
 A separate Gemini call (from the cooking-time estimator) that reads the finished,
-translated recipe and returns a short list of practical tips — what to prep ahead, which
-tasks two cooks can run in parallel, timing traps, and finishing touches. Best-effort:
-if the model is unavailable or errors, the recipe simply carries no notes.
+translated recipe and returns a short list of practical tips — which of our cookware
+each step needs, what the spare cookware lets us run in parallel, timing traps, and
+finishing touches. Best-effort: if the model is unavailable or errors, the recipe
+simply carries no notes.
 """
 from __future__ import annotations
 
 import json
 import logging
+import re
 from typing import List, Optional
 
 log = logging.getLogger(__name__)
 
-_PROMPT = """You are a senior chef writing a short briefing for TWO home cooks who will
-make this recipe together. Give practical, recipe-specific advice — not generic filler.
+# The cookware we actually have. The notes plan the recipe around exactly this.
+KITCHEN_EQUIPMENT = [
+    "1 big pot",
+    "1 medium pot",
+    "1 frying pan",
+    "1 oven",
+    "1 air fryer",
+]
+
+_PROMPT = """You are a senior chef writing a short briefing for a home cook making this
+recipe. Give practical, recipe-specific advice — not generic filler.
+
+The kitchen has exactly this cookware, and nothing else for cooking:
+{equipment}
+Bowls, colanders, baking trays, ovenproof dishes and a hand blender are available too;
+don't plan around them or repurpose the cookware above for their jobs.
 
 Focus on:
+- Cookware plan (always the FIRST bullet): which of the cookware above the recipe needs,
+  mapped to what it's used for. Where the recipe asks for something not in the list
+  (a wok, a small saucepan, a second pan), say which item above to use instead.
+- Parallel cooking: where a spare item from the list (e.g. the air fryer or the oven
+  while the frying pan is busy, the second pot) lets two things cook at the same time
+  instead of one after the other, say which item, for what, and from which step. Only
+  suggest swaps that keep the result as good (e.g. roasting veg in the air fryer
+  instead of frying them in batches). Never assume more than one of any item.
 - Mise en place worth doing before the heat goes on.
-- Which tasks the two cooks can run IN PARALLEL (name who does what), and which must be
-  sequential.
-- Timing traps: things that overlap, things that can't wait, what to start first.
+- Timing traps: things that can't wait, what to start first.
 - Small technique or finishing tips that raise the result.
 
-Write 4-7 concise bullet points. Each bullet one sentence, imperative, specific to THIS
-dish. Refer to the two cooks as "Cook A" and "Cook B" where it helps.
+Write 4-7 concise bullet points. Each bullet one or two sentences, imperative, specific
+to THIS dish.
 
 For every bullet, list the step numbers it refers to in `steps` (the numbers shown in
 the recipe below), so the cook can find them quickly. Use an empty list only for advice
@@ -59,6 +81,11 @@ _SCHEMA = {
 }
 
 
+# "(Step 6)", "(steps 2, 3 and 5)" — the model writes these inline despite being told
+# not to; the `steps` field already carries them, so they'd show up twice.
+_INLINE_STEP_REF_RE = re.compile(r"\s*\(\s*steps?\s+[\d,\s&and-]+\)", re.IGNORECASE)
+
+
 def format_step_reference(steps) -> str:
     """'(step 3)' / '(steps 2, 6)' / '' — appended so a tip is easy to locate."""
     numbers = []
@@ -91,7 +118,7 @@ def parse_notes(raw) -> List[str]:
             reference = format_step_reference(item.get("steps"))
         else:
             text, reference = str(item).strip(), ""
-        text = text.lstrip("-•").strip()
+        text = _INLINE_STEP_REF_RE.sub("", text.lstrip("-•")).strip()
         if not text:
             continue
         # Keep the sentence's full stop after the reference: "... pan (step 6)."
@@ -110,6 +137,7 @@ def _generate_gemini(recipe, api_key: str) -> List[str]:
     ingredients = "\n".join(f"- {i.display}" for i in recipe.ingredients)
     portions = recipe.display_portions or recipe.source_portions or 2
     prompt = _PROMPT.format(
+        equipment="\n".join(f"- {item}" for item in KITCHEN_EQUIPMENT),
         title=recipe.title,
         portions=portions,
         ingredients=ingredients or "(none)",

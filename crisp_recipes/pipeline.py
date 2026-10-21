@@ -19,6 +19,7 @@ from crisp_recipes.models import Recipe
 from crisp_recipes.nutrition import add_nutrition
 from crisp_recipes.render import render_all_pdfs
 from crisp_recipes.scraper import scrape_current_recipes
+from crisp_recipes.site import publish_week
 from crisp_recipes.translator import translate_recipes
 
 log = logging.getLogger(__name__)
@@ -48,9 +49,8 @@ def run(settings: Optional[Settings] = None) -> List[Recipe]:
         log.error("No recipes scraped; aborting")
         return []
 
-    # Scale amounts while the text is still Dutch — the unit allowlist and word order
-    # only hold pre-translation. A no-op if the site's portion selector already
-    # returned the target size.
+    # Scale the ingredient list to the portions we cook; steps keep the site's amounts.
+    # A no-op if the site's portion selector already returned the target size.
     for r in recipes:
         current = r.portions_for_amounts
         if current and current != settings.target_portions:
@@ -73,7 +73,13 @@ def run(settings: Optional[Settings] = None) -> List[Recipe]:
     add_chef_notes(recipes, settings.google_api_key)
 
     log.info("Rendering PDFs...")
-    pdfs = render_all_pdfs(recipes, output_dir())
+    out_dir = output_dir()
+    pdfs = render_all_pdfs(recipes, out_dir)
+
+    if settings.site_dir:
+        log.info("Publishing to the recipe site...")
+        publish_week(recipes, Path(settings.site_dir), out_dir.name, label, pdfs,
+                     settings.ratings_api_url)
 
     log.info("Sending email...")
     send_email(recipes, settings, label, pdfs)

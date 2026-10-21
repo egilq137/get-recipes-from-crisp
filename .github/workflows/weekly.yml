@@ -12,6 +12,10 @@ concurrency:
   group: weekly-recipes
   cancel-in-progress: false
 
+# Pushes the recipe website to the gh-pages branch.
+permissions:
+  contents: write
+
 jobs:
   send:
     runs-on: ubuntu-latest
@@ -55,6 +59,16 @@ jobs:
           echo "All attempts failed."
           exit 1
 
+      - name: Check out the recipe site (gh-pages branch)
+        # Past weeks live on gh-pages; the pipeline adds this week next to them.
+        # The first run creates the branch.
+        run: |
+          if git fetch --depth=1 origin gh-pages; then
+            git worktree add -B gh-pages site FETCH_HEAD
+          else
+            git worktree add --orphan -b gh-pages site
+          fi
+
       - name: Run the pipeline
         env:
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
@@ -66,7 +80,22 @@ jobs:
           # Optional overrides (safe to leave unset):
           CRISP_BOX: ${{ vars.CRISP_BOX }}
           TARGET_PORTIONS: ${{ vars.TARGET_PORTIONS }}
+          SITE_DIR: site
+          RATINGS_API_URL: ${{ vars.RATINGS_API_URL }}
         run: uv run python -m crisp_recipes
+
+      - name: Publish the recipe site
+        # Runs even if the email failed, so the site still gets the week.
+        if: always()
+        working-directory: site
+        run: |
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No site changes."
+            exit 0
+          fi
+          git -c user.name="github-actions[bot]"               -c user.email="41898282+github-actions[bot]@users.noreply.github.com"               commit -m "Recipes for $(date -u +%G-W%V)"
+          git push origin gh-pages
 
       - name: Upload generated PDFs
         # Keeps a copy in the run's artifacts even if the email fails to send.
