@@ -32,6 +32,18 @@ def test_parse_notes_appends_step_reference_inside_sentence():
     ]
 
 
+def test_parse_notes_drops_inline_step_references():
+    raw = {"notes": [{
+        "text": "Use the oven for the potatoes (Steps 1, 4). Roast the corn in the air "
+                "fryer (Step 6) while they bake.",
+        "steps": [1, 4, 6],
+    }]}
+    assert parse_notes(raw) == [
+        "Use the oven for the potatoes. Roast the corn in the air fryer while they "
+        "bake (steps 1, 4, 6).",
+    ]
+
+
 def test_parse_notes_from_list_and_strips_bullets():
     raw = ["- Salt the pasta water.", "• Toast the panko last.", "  ", ""]
     assert parse_notes(raw) == ["Salt the pasta water.", "Toast the panko last."]

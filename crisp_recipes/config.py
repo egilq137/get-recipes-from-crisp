@@ -69,9 +69,20 @@ class Settings:
     # Scraping / behavior
     crisp_box: str = "vegan"
     target_lang: str = "EN-GB"
+    # Who translates the steps: "gemini" (checked, with per-step DeepL fallback) or
+    # "deepl". Title and ingredient names always go to DeepL.
+    step_translator: str = "gemini"
     # How many portions the output should be written for. crisp.nl publishes amounts
     # for 2; the scraper asks the site for this many and falls back to scaling.
     target_portions: int = 4
+
+    # Recipe website (optional). When `site_dir` is set the week is also published
+    # there; `ratings_api_url` is the Apps Script web-app URL the site saves ratings to.
+    site_dir: str = ""
+    ratings_api_url: str = ""
+    # Public root of the site (e.g. https://user.github.io/repo/), so the email can
+    # link each recipe's cooking view. CI derives it from the repository.
+    site_url: str = ""
 
     # Email SMTP (Gmail defaults; rarely changed)
     smtp_server: str = "smtp.gmail.com"
@@ -88,5 +99,9 @@ class Settings:
             recipients=_split_recipients(_require("RECIPIENTS")),
             crisp_box=_optional("CRISP_BOX", "vegan"),
             target_lang=_optional("TARGET_LANG", "EN-GB"),
+            step_translator=_optional("STEP_TRANSLATOR", "gemini").lower(),
             target_portions=int(_optional("TARGET_PORTIONS", "4")),
+            site_dir=_optional("SITE_DIR", ""),
+            ratings_api_url=_optional("RATINGS_API_URL", ""),
+            site_url=_optional("SITE_URL", ""),
         )

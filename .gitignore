@@ -19,3 +19,7 @@ venv/
 .DS_Store
 .idea/
 .vscode/
+
+# Local recipe-site build (CI publishes it to the gh-pages branch)
+site/
+

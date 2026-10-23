@@ -1,9 +1,8 @@
 """Tests for scaling displayed amounts to a different portion count.
 
-The critical property: only food quantities scale. Oven temperatures, cooking times
-and physical sizes inside the step text must survive untouched — doubling "200 graden"
-or "15-20 minuten" would ruin the recipe. Nutrition must stay pinned to the official
-portion count so per-serving figures never move.
+Only the ingredient list scales; the steps keep crisp.nl's original text and amounts.
+Nutrition must stay pinned to the official portion count so per-serving figures never
+move.
 """
 from fractions import Fraction
 
@@ -15,11 +14,7 @@ from crisp_recipes.models import (
     Recipe,
     format_amount_value,
     parse_amount,
-    scale_amounts_in_text,
 )
-
-NAMES = ["zoete aardappel", "wortel", "kaas", "yoghurt", "tomaten", "sjalot"]
-
 
 # --------------------------------------------------------------------------- #
 # Amount parsing / formatting
@@ -51,45 +46,6 @@ def test_format_amount_value(value, expected):
 
 
 # --------------------------------------------------------------------------- #
-# Step-text scaling: what MUST change
-# --------------------------------------------------------------------------- #
-@pytest.mark.parametrize("text,expected", [
-    ("Schil 400 g zoete aardappel", "Schil 800 g zoete aardappel"),
-    ("Voeg ½ tl komijnpoeder toe", "Voeg 1 tl komijnpoeder toe"),
-    ("bestrooi met ¾ zakje kaas", "bestrooi met 1½ zakje kaas"),
-    ("Meng 1 el mayonaise", "Meng 2 el mayonaise"),
-    ("Snij 1½ tomaten in plakjes", "Snij 3 tomaten in plakjes"),
-])
-def test_scales_food_quantities(text, expected):
-    assert scale_amounts_in_text(text, Fraction(2), NAMES) == expected
-
-
-# --------------------------------------------------------------------------- #
-# Step-text scaling: what MUST NOT change (safety)
-# --------------------------------------------------------------------------- #
-@pytest.mark.parametrize("text", [
-    "Verwarm de oven voor op 200 graden.",          # temperature
-    "Bak 15-20 minuten in de oven.",                # time range
-    "bak de mais in 5 tot 8 minuten beetgaar",      # time range, words
-    "snij in plakjes van 0.5 cm dik",               # thickness
-    "Kook 9-11 minuten al dente.",                  # time
-])
-def test_never_scales_non_food_numbers(text):
-    assert scale_amounts_in_text(text, Fraction(2), NAMES) == text
-
-
-def test_mixed_line_scales_only_the_food():
-    text = "Verwarm 10 minuten op 180 graden en voeg 250 g wortel toe"
-    out = scale_amounts_in_text(text, Fraction(2), NAMES)
-    assert out == "Verwarm 10 minuten op 180 graden en voeg 500 g wortel toe"
-
-
-def test_factor_one_is_noop():
-    text = "Schil 400 g zoete aardappel"
-    assert scale_amounts_in_text(text, Fraction(1), NAMES) == text
-
-
-# --------------------------------------------------------------------------- #
 # Recipe-level scaling
 # --------------------------------------------------------------------------- #
 def _recipe():
@@ -107,12 +63,13 @@ def _recipe():
     )
 
 
-def test_scaled_to_portions_doubles_ingredients_and_steps():
-    out = _recipe().scaled_to_portions(4)
+def test_scaled_to_portions_doubles_ingredients_but_not_steps():
+    original = _recipe()
+    out = original.scaled_to_portions(4)
     assert out.ingredients[0].amount == "800"
-    assert out.steps[1] == "2. Schil 800 g zoete aardappel."
-    assert out.steps[0] == "1. Verwarm de oven op 200 graden."   # temperature intact
+    assert out.steps == original.steps          # steps keep the site's 2-portion text
     assert out.display_portions == 4
+    assert out.source_portions == 2
 
 
 def test_unquantified_pantry_item_survives_scaling():
