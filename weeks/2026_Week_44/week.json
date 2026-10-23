@@ -1,0 +1,33 @@
+{
+  "week": "2026_Week_44",
+  "label": "Week 44, 2026",
+  "recipes": [
+    {
+      "id": "2026_Week_44/conchiglie-with-romanesco-courgette-vegan-pesto-and-pine-nut",
+      "title": "Conchiglie with romanesco, courgette, vegan pesto and pine nuts",
+      "time": "30 min active · ~51 min realistic (incl. prep)",
+      "servings": 4,
+      "kcal": 238,
+      "page": "weeks/2026_Week_44/conchiglie-with-romanesco-courgette-vegan-pesto-and-pine-nut.html",
+      "pdf": "weeks/2026_Week_44/conchiglie-with-romanesco-courgette-vegan-pesto-and-pine-nut.pdf"
+    },
+    {
+      "id": "2026_Week_44/spaghetti-squash-with-a-spicy-oriental-tomato-sauce-and-card",
+      "title": "Spaghetti squash with a spicy Oriental tomato sauce and cardamom rice",
+      "time": "35 min active · ~55 min realistic (incl. prep)",
+      "servings": 4,
+      "kcal": 882,
+      "page": "weeks/2026_Week_44/spaghetti-squash-with-a-spicy-oriental-tomato-sauce-and-card.html",
+      "pdf": "weeks/2026_Week_44/spaghetti-squash-with-a-spicy-oriental-tomato-sauce-and-card.pdf"
+    },
+    {
+      "id": "2026_Week_44/fried-rice-with-leek-pak-choi-and-a-fried-egg-in-miso-butter",
+      "title": "Fried rice with leek, pak choi and a fried egg in miso butter",
+      "time": "35 min active · ~67 min realistic (incl. prep)",
+      "servings": 4,
+      "kcal": 500,
+      "page": "weeks/2026_Week_44/fried-rice-with-leek-pak-choi-and-a-fried-egg-in-miso-butter.html",
+      "pdf": "weeks/2026_Week_44/fried-rice-with-leek-pak-choi-and-a-fried-egg-in-miso-butter.pdf"
+    }
+  ]
+}
