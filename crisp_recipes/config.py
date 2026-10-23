@@ -80,6 +80,9 @@ class Settings:
     # there; `ratings_api_url` is the Apps Script web-app URL the site saves ratings to.
     site_dir: str = ""
     ratings_api_url: str = ""
+    # Public root of the site (e.g. https://user.github.io/repo/), so the email can
+    # link each recipe's cooking view. CI derives it from the repository.
+    site_url: str = ""
 
     # Email SMTP (Gmail defaults; rarely changed)
     smtp_server: str = "smtp.gmail.com"
@@ -100,4 +103,5 @@ class Settings:
             target_portions=int(_optional("TARGET_PORTIONS", "4")),
             site_dir=_optional("SITE_DIR", ""),
             ratings_api_url=_optional("RATINGS_API_URL", ""),
+            site_url=_optional("SITE_URL", ""),
         )

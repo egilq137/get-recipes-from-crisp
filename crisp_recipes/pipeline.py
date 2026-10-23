@@ -79,7 +79,7 @@ def run(settings: Optional[Settings] = None) -> List[Recipe]:
     if settings.site_dir:
         log.info("Publishing to the recipe site...")
         publish_week(recipes, Path(settings.site_dir), out_dir.name, label, pdfs,
-                     settings.ratings_api_url)
+                     settings.ratings_api_url, settings.site_url)
 
     log.info("Sending email...")
     send_email(recipes, settings, label, pdfs)

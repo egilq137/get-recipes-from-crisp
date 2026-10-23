@@ -57,16 +57,16 @@ def cooking_time_label(recipe: Recipe) -> str:
     return "time n/a"
 
 
-def preparation_heading(recipe: Recipe) -> str:
-    """'Preparation', noting the portion count when the steps differ from the list.
+def steps_portion_note(recipe: Recipe) -> str:
+    """Which portion count the step amounts are for, when it differs from the list.
 
-    Steps keep crisp.nl's own amounts, so when the ingredient list was scaled the
-    heading says which portion count the step amounts are for.
+    Steps keep crisp.nl's own amounts, so when the ingredient list was scaled this
+    note (shown under the Preparation heading) says so. Empty when they agree.
     """
     source, display = recipe.source_portions, recipe.display_portions
     if source and display and source != display:
-        return f"Preparation (amounts in steps are for {source} servings, as on crisp.nl)"
-    return "Preparation"
+        return f"Amounts in the steps are for {source} servings, as on crisp.nl."
+    return ""
 
 
 def format_daily_value(value: Optional[float], spec) -> str:
@@ -158,6 +158,9 @@ ul.chef { background: #fbf7ef; border-left: 3px solid #d9a441; border-radius: 4p
           padding: 10px 10px 10px 28px; }
 ul.chef li { margin: 5px 0; font-size: 14px; }
 .note { color: #7b8794; font-size: 12px; margin-top: 12px; font-style: italic; }
+.stepsnote { color: #7b8794; font-size: 13px; margin: -4px 0 6px; }
+.phone { display: inline-block; margin: 8px 0 2px; padding: 6px 12px; border-radius: 6px;
+         background: #16324f; color: #fff !important; text-decoration: none; font-size: 14px; }
 """
 
 
@@ -184,7 +187,7 @@ def _nutrition_table_html(recipe: Recipe) -> str:
     )
 
 
-def _recipe_html(recipe: Recipe) -> str:
+def _recipe_html(recipe: Recipe, web_url: Optional[str] = None) -> str:
     portions = recipe.display_portions or recipe.source_portions or "?"
     ingredients = "".join(
         f"<li>{html.escape(text)}"
@@ -193,6 +196,8 @@ def _recipe_html(recipe: Recipe) -> str:
         for text, match in _ingredient_lines(recipe)
     )
     steps = "".join(f"<li>{html.escape(_strip_step_number(s))}</li>" for s in recipe.steps)
+    note = steps_portion_note(recipe)
+    steps_note = f'<p class="stepsnote">{html.escape(note)}</p>' if note else ""
     chef = ""
     if recipe.chef_notes:
         tips = "".join(f"<li>{html.escape(n)}</li>" for n in recipe.chef_notes)
@@ -200,17 +205,23 @@ def _recipe_html(recipe: Recipe) -> str:
             '<h3>👩‍🍳 Chef\'s notes &amp; cookware</h3>'
             f'<ul class="chef">{tips}</ul>'
         )
+    phone = (
+        f'<a class="phone" href="{html.escape(web_url)}">📱 Open the cooking view</a>'
+        if web_url else ""
+    )
+    # Cooking order first; nutrition is reference material, so it goes last.
     return f"""
     <div class="recipe">
       <h2>{html.escape(recipe.title)}</h2>
       <div class="meta">🕒 {html.escape(cooking_time_label(recipe))} &nbsp;·&nbsp; 🍽️ {portions} servings</div>
-      <h3>Nutrition (per serving)</h3>
-      {_nutrition_table_html(recipe)}
+      {phone}
       <h3>Ingredients (for {portions} servings)</h3>
       <ul>{ingredients}</ul>
-      <h3>{html.escape(preparation_heading(recipe))}</h3>
+      <h3>Preparation</h3>{steps_note}
       <ol class="steps">{steps}</ol>
       {chef}
+      <h3>Nutrition (per serving)</h3>
+      {_nutrition_table_html(recipe)}
     </div>
     """
 
@@ -222,7 +233,7 @@ def _strip_step_number(step: str) -> str:
 
 
 def build_email_html(recipes: List[Recipe], week_label: str) -> str:
-    body = "".join(_recipe_html(r) for r in recipes)
+    body = "".join(_recipe_html(r, r.web_url) for r in recipes)
     note = (
         "Nutrition from USDA FoodData Central. Ingredient weights and the realistic "
         "cooking time are estimates; nutrient values are real but depend on the matched "
@@ -242,51 +253,112 @@ def build_email_html(recipes: List[Recipe], week_label: str) -> str:
 # --------------------------------------------------------------------------- #
 # PDF
 # --------------------------------------------------------------------------- #
+# Phone-shaped page (roughly a 9:16 screen), so the PDF opens fit-to-width on a phone
+# and reads top to bottom with no sideways scrolling. Text is sized for that zoom.
+PDF_PAGE_MM = (80, 142)
+_PDF_MARGIN = 5
+_BODY_PT, _BODY_LINE = 11, 5.4
+_SMALL_PT, _SMALL_LINE = 8.5, 4.2
+_TEXT = (31, 41, 51)
+_MUTED = (110, 120, 133)
+
+
 class RecipePdf:
-    """Builds a single-recipe PDF with the same content as the email card."""
+    """Builds a single-recipe, phone-sized PDF with the same content as the email card.
+
+    Cooking order first (ingredients, steps, chef's notes); nutrition last, since it's
+    reference material nobody needs mid-recipe.
+    """
 
     def __init__(self):
         from fpdf import FPDF
 
-        self.pdf = FPDF()
-        self.pdf.set_auto_page_break(auto=True, margin=15)
+        self.pdf = FPDF(format=PDF_PAGE_MM)
+        self.pdf.set_margins(_PDF_MARGIN, _PDF_MARGIN, _PDF_MARGIN)
+        self.pdf.set_auto_page_break(auto=True, margin=_PDF_MARGIN + 1)
         self.pdf.add_font("DejaVu", "", str(FONT_DIR / "DejaVuSans.ttf"))
         self.pdf.add_font("DejaVu", "B", str(FONT_DIR / "DejaVuSans-Bold.ttf"))
 
     def render(self, recipe: Recipe, out_path: Path) -> Path:
-        from fpdf.enums import XPos, YPos
-
         pdf = self.pdf
         pdf.add_page()
 
-        pdf.set_font("DejaVu", "B", 16)
-        pdf.multi_cell(0, 9, recipe.title, align="C",
-                       new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-        pdf.set_font("DejaVu", "", 10)
+        pdf.set_font("DejaVu", "B", 14)
+        self._text(recipe.title, 6.5)
         portions = recipe.display_portions or recipe.source_portions or "?"
-        pdf.set_text_color(90, 96, 109)
-        pdf.multi_cell(0, 6, f"{cooking_time_label(recipe)}  ·  {portions} servings",
-                       align="C", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-        pdf.set_text_color(31, 41, 51)
-        pdf.ln(2)
+        pdf.set_font("DejaVu", "", _SMALL_PT + 0.5)
+        pdf.set_text_color(*_MUTED)
+        self._text(f"{cooking_time_label(recipe)}  ·  {portions} servings", 4.8)
+        pdf.set_text_color(*_TEXT)
 
-        self._nutrition(recipe)
         self._ingredients(recipe)
         self._steps(recipe)
         self._chef_notes(recipe)
+        self._nutrition(recipe)
 
         out_path.parent.mkdir(parents=True, exist_ok=True)
         pdf.output(str(out_path))
         return out_path
 
-    def _heading(self, text: str) -> None:
+    def _text(self, text: str, line_height: float) -> None:
         from fpdf.enums import XPos, YPos
 
-        self.pdf.ln(3)
+        # Left-aligned: justified text leaves big gaps in a column this narrow.
+        self.pdf.multi_cell(0, line_height, text, align="L",
+                            new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+
+    def _heading(self, text: str) -> None:
+        # Never leave a heading stranded at the bottom of a page.
+        if self.pdf.get_y() > self.pdf.h - self.pdf.b_margin - 22:
+            self.pdf.add_page()
+        else:
+            self.pdf.ln(3)
         self.pdf.set_font("DejaVu", "B", 12)
         self.pdf.set_text_color(22, 50, 79)
-        self.pdf.multi_cell(0, 7, text, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-        self.pdf.set_text_color(31, 41, 51)
+        self._text(text, 5.8)
+        self.pdf.set_text_color(*_TEXT)
+        self.pdf.ln(0.5)
+
+    def _ingredients(self, recipe: Recipe) -> None:
+        portions = recipe.display_portions or recipe.source_portions
+        self._heading(f"Ingredients (for {portions} servings)" if portions else "Ingredients")
+        pdf = self.pdf
+        for text, match in _ingredient_lines(recipe):
+            pdf.set_font("DejaVu", "", _BODY_PT)
+            self._text(f"•  {text}", _BODY_LINE)
+            if match:
+                pdf.set_font("DejaVu", "", _SMALL_PT - 1)
+                pdf.set_text_color(154, 165, 177)
+                self._text(f"     → {match}", 3.8)
+                pdf.set_text_color(*_TEXT)
+
+    def _steps(self, recipe: Recipe) -> None:
+        self._heading("Preparation")
+        note = steps_portion_note(recipe)
+        if note:
+            self.pdf.set_font("DejaVu", "", _SMALL_PT)
+            self.pdf.set_text_color(*_MUTED)
+            self._text(note, _SMALL_LINE)
+            self.pdf.set_text_color(*_TEXT)
+            self.pdf.ln(1.5)
+        for step in recipe.steps:
+            number, _, body = step.partition(". ")
+            if number.isdigit():
+                self.pdf.set_font("DejaVu", "B", _BODY_PT)
+                self._text(f"Step {number}", _BODY_LINE)
+                step = body
+            self.pdf.set_font("DejaVu", "", _BODY_PT)
+            self._text(step, _BODY_LINE)
+            self.pdf.ln(2)
+
+    def _chef_notes(self, recipe: Recipe) -> None:
+        if not recipe.chef_notes:
+            return
+        self._heading("Chef's notes & cookware")
+        self.pdf.set_font("DejaVu", "", _BODY_PT)
+        for note in recipe.chef_notes:
+            self._text(f"•  {note}", _BODY_LINE)
+            self.pdf.ln(1)
 
     def _nutrition(self, recipe: Recipe) -> None:
         from fpdf.enums import XPos, YPos
@@ -295,69 +367,31 @@ class RecipePdf:
         sections = nutrition_sections(recipe)
         pdf = self.pdf
         if not sections:
-            pdf.set_font("DejaVu", "", 10)
-            pdf.multi_cell(0, 6, "Nutrition data unavailable.",
-                           new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+            pdf.set_font("DejaVu", "", _SMALL_PT)
+            self._text("Nutrition data unavailable.", _SMALL_LINE)
             return
-        w = (95, 40, 25)
-        pdf.set_font("DejaVu", "B", 10)
-        pdf.cell(w[0], 6, "Nutrient", border="B")
-        pdf.cell(w[1], 6, "Per serving", border="B", align="R")
-        pdf.cell(w[2], 6, "% daily*", border="B", align="R",
+        epw = pdf.epw
+        w = (epw * 0.50, epw * 0.28, epw * 0.22)
+        pdf.set_font("DejaVu", "B", _SMALL_PT)
+        pdf.cell(w[0], 5, "Nutrient", border="B")
+        pdf.cell(w[1], 5, "Amount", border="B", align="R")
+        pdf.cell(w[2], 5, "% daily*", border="B", align="R",
                  new_x=XPos.LMARGIN, new_y=YPos.NEXT)
         for title, rows in sections:
-            pdf.set_font("DejaVu", "B", 9.5)
+            pdf.set_font("DejaVu", "B", _SMALL_PT)
             pdf.set_fill_color(247, 249, 251)
-            pdf.cell(sum(w), 6, title, fill=True,
-                     new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-            pdf.set_font("DejaVu", "", 9.5)
+            pdf.cell(epw, 5, title, fill=True, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+            pdf.set_font("DejaVu", "", _SMALL_PT)
             for label, ps, dv in rows:
-                pdf.cell(w[0], 5.5, label)
-                pdf.cell(w[1], 5.5, ps, align="R")
-                pdf.cell(w[2], 5.5, dv, align="R",
+                pdf.cell(w[0], _SMALL_LINE + 0.4, label)
+                pdf.cell(w[1], _SMALL_LINE + 0.4, ps, align="R")
+                pdf.cell(w[2], _SMALL_LINE + 0.4, dv, align="R",
                          new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-        pdf.set_font("DejaVu", "", 7.5)
-        pdf.set_text_color(123, 135, 148)
-        pdf.multi_cell(0, 4, "* Percent of daily needs for a 2000 kcal diet (FDA Daily Values).",
-                       new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-        pdf.set_text_color(31, 41, 51)
-
-    def _ingredients(self, recipe: Recipe) -> None:
-        from fpdf.enums import XPos, YPos
-
-        portions = recipe.display_portions or recipe.source_portions
-        self._heading(f"Ingredients (for {portions} servings)" if portions else "Ingredients")
-        pdf = self.pdf
-        for text, match in _ingredient_lines(recipe):
-            pdf.set_font("DejaVu", "", 10)
-            pdf.multi_cell(0, 5.5, f"•  {text}", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-            if match:
-                pdf.set_font("DejaVu", "", 8)
-                pdf.set_text_color(154, 165, 177)
-                pdf.multi_cell(0, 4.5, f"      → {match}",
-                               new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-                pdf.set_text_color(31, 41, 51)
-
-    def _steps(self, recipe: Recipe) -> None:
-        from fpdf.enums import XPos, YPos
-
-        self._heading(preparation_heading(recipe))
-        self.pdf.set_font("DejaVu", "", 10)
-        for step in recipe.steps:
-            self.pdf.multi_cell(0, 5.5, step, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-            self.pdf.ln(1)
-
-    def _chef_notes(self, recipe: Recipe) -> None:
-        from fpdf.enums import XPos, YPos
-
-        if not recipe.chef_notes:
-            return
-        self._heading("Chef's notes & cookware")
-        pdf = self.pdf
-        pdf.set_font("DejaVu", "", 10)
-        for note in recipe.chef_notes:
-            pdf.multi_cell(0, 5.5, f"•  {note}", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-            pdf.ln(0.5)
+        pdf.ln(1)
+        pdf.set_font("DejaVu", "", _SMALL_PT - 1.5)
+        pdf.set_text_color(*_MUTED)
+        self._text("* Percent of daily needs for a 2000 kcal diet (FDA Daily Values).", 3.5)
+        pdf.set_text_color(*_TEXT)
 
 
 def render_recipe_pdf(recipe: Recipe, out_path: Path) -> Path:

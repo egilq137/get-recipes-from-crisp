@@ -124,3 +124,13 @@ def test_build_message_multipart_with_attachment(tmp_path):
 def test_render_pdf_writes_file(tmp_path):
     out = render_recipe_pdf(_recipe_with_nutrition(), tmp_path / "out.pdf")
     assert out.exists() and out.stat().st_size > 1000  # a real PDF got written
+
+
+def test_pdf_is_phone_sized(tmp_path):
+    from crisp_recipes.render import PDF_PAGE_MM
+
+    out = render_recipe_pdf(_recipe_with_nutrition(), tmp_path / "r.pdf")
+    data = out.read_bytes()
+    # MediaBox in points: 80 x 142 mm -> ~226.8 x 402.5 pt
+    w_pt, h_pt = (round(mm * 72 / 25.4, 2) for mm in PDF_PAGE_MM)
+    assert f"/MediaBox [0 0 {w_pt:.2f} {h_pt:.2f}]".encode() in data

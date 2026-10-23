@@ -14,9 +14,12 @@ This job runs once a week on GitHub Actions and emails you those recipes:
 - and **chef's notes** on which of your cookware each step needs and what can run in
   parallel on the spare equipment, cross-referenced to the step numbers.
 
-You get one HTML email with a PDF per recipe attached, and every week is added to a
+You get one HTML email with a phone-sized PDF per recipe attached (it reads top to
+bottom on a phone, no sideways scrolling), and every week is added to a
 **recipe website** where you and others can rate each dish (how much you liked it, how
-easy it was), mark favourites and leave notes — no account needed.
+easy it was), mark favourites and leave notes — no account needed. Each recipe also
+has a **cooking view** for the phone: big text, tap ingredients and steps to tick them
+off, and a *Keep screen on* button. The email links straight to it.
 
 ## How it works
 
@@ -33,7 +36,7 @@ scrape → scale amounts → translate → nutrition → times → chef's notes 
 | `nutrients.py` | The 28 tracked nutrients: labels, units, USDA ids, daily values |
 | `cooking_time.py` | Official time from the site + prep-aware realistic estimate |
 | `chef_notes.py` | Senior-chef tips: cookware per step and what can run in parallel, with step references |
-| `render.py` | HTML email body and per-recipe PDFs |
+| `render.py` | HTML email body and phone-sized per-recipe PDFs |
 | `site.py` | Recipe website: per-week recipe pages + PDFs, rebuilt index |
 | `site_assets/` | The website's ratings app (plain HTML/CSS/JS) |
 | `apps_script/Code.gs` | Ratings API: a Google Apps Script web app over a Google Sheet |
@@ -126,6 +129,7 @@ deployments → Edit → New version** to keep the same URL.
 | `STEP_TRANSLATOR` | `gemini` | `gemini` (checked, DeepL fallback) or `deepl` for the steps |
 | `SITE_DIR` | — | publish the week to this folder (CI sets `site`) |
 | `RATINGS_API_URL` | — | Apps Script web-app URL the website saves ratings to |
+| `SITE_URL` | — | public site root, for the email's cooking-view links (CI derives it) |
 
 ## Tests
 

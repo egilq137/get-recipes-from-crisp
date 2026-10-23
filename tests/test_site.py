@@ -55,3 +55,25 @@ def test_index_lists_weeks_newest_first_and_rerun_replaces_week(tmp_path):
 def test_index_without_ratings_api(tmp_path):
     build_index(tmp_path, None)
     assert (tmp_path / "config.js").read_text() == 'window.RATINGS_API_URL = "";\n'
+
+
+def test_cooking_view_has_tickable_steps_and_sets_web_url(tmp_path):
+    recipe = _recipe()
+    recipe.steps = ["1. Chop the onion.", "2. Fry it."]
+    week_dir = write_week([recipe], tmp_path, "2026_Week_44", "Week 44, 2026",
+                          site_url="https://me.github.io/repo/")
+    page = (week_dir / "tacos-with-mango-jalapeno-salsa.html").read_text(encoding="utf-8")
+    assert page.count('class="step"') == 2 and "Step 2" in page
+    assert 'data-recipe-id="2026_Week_44/tacos-with-mango-jalapeno-salsa"' in page
+    assert "../../recipe.js" in page and 'name="viewport"' in page
+    assert recipe.web_url == (
+        "https://me.github.io/repo/weeks/2026_Week_44/tacos-with-mango-jalapeno-salsa.html")
+
+
+def test_email_links_to_cooking_view_when_published():
+    from crisp_recipes.render import build_email_html
+
+    recipe = _recipe()
+    assert "cooking view" not in build_email_html([recipe], "W")
+    recipe.web_url = "https://me.github.io/repo/weeks/w/tacos.html"
+    assert 'href="https://me.github.io/repo/weeks/w/tacos.html"' in build_email_html([recipe], "W")

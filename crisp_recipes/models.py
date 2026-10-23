@@ -193,6 +193,8 @@ class Recipe:
     display_portions: Optional[int] = None
     # Senior-chef tips on cooking this dish with two people (parallelizable tasks, etc.).
     chef_notes: List[str] = field(default_factory=list)
+    # Public URL of this recipe's phone-friendly page on the recipe site, once published.
+    web_url: Optional[str] = None
 
     def combine_steps(self) -> str:
         return "\n".join(self.steps)
