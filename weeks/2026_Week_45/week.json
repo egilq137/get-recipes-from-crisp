@@ -1,0 +1,33 @@
+{
+  "week": "2026_Week_45",
+  "label": "Week 45, 2026",
+  "recipes": [
+    {
+      "id": "2026_Week_45/pita-bread-with-strips-of-shawarma-coleslaw-and-fried-potato",
+      "title": "Pita bread with strips of shawarma, coleslaw and fried potatoes",
+      "time": "30 min active · ~46 min realistic (incl. prep)",
+      "servings": 4,
+      "kcal": 418,
+      "page": "weeks/2026_Week_45/pita-bread-with-strips-of-shawarma-coleslaw-and-fried-potato.html",
+      "pdf": "weeks/2026_Week_45/pita-bread-with-strips-of-shawarma-coleslaw-and-fried-potato.pdf"
+    },
+    {
+      "id": "2026_Week_45/modern-hot-lightning-with-vegan-bacon-bits-and-fried-onions",
+      "title": "Modern hot lightning with vegan bacon bits and fried onions",
+      "time": "30 min active · ~74 min realistic (incl. prep)",
+      "servings": 4,
+      "kcal": 505,
+      "page": "weeks/2026_Week_45/modern-hot-lightning-with-vegan-bacon-bits-and-fried-onions.html",
+      "pdf": "weeks/2026_Week_45/modern-hot-lightning-with-vegan-bacon-bits-and-fried-onions.pdf"
+    },
+    {
+      "id": "2026_Week_45/spaghetti-with-leeks-miso-and-white-bean-sauce-palm-kale-pin",
+      "title": "Spaghetti with leeks, miso and white bean sauce, palm kale, pine nuts and a chicory and apple salad",
+      "time": "30 min active · ~58 min realistic (incl. prep)",
+      "servings": 4,
+      "kcal": 393,
+      "page": "weeks/2026_Week_45/spaghetti-with-leeks-miso-and-white-bean-sauce-palm-kale-pin.html",
+      "pdf": "weeks/2026_Week_45/spaghetti-with-leeks-miso-and-white-bean-sauce-palm-kale-pin.pdf"
+    }
+  ]
+}
