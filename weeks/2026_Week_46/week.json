@@ -1,0 +1,33 @@
+{
+  "week": "2026_Week_46",
+  "label": "Week 46, 2026",
+  "recipes": [
+    {
+      "id": "2026_Week_46/mild-quinoa-curry-with-bold-bean-chickpeas-pumpkin-and-peppe",
+      "title": "Mild quinoa curry with Bold Bean chickpeas, pumpkin and peppers",
+      "time": "30 min active · ~45 min realistic (incl. prep)",
+      "servings": 4,
+      "kcal": 389,
+      "page": "weeks/2026_Week_46/mild-quinoa-curry-with-bold-bean-chickpeas-pumpkin-and-peppe.html",
+      "pdf": "weeks/2026_Week_46/mild-quinoa-curry-with-bold-bean-chickpeas-pumpkin-and-peppe.pdf"
+    },
+    {
+      "id": "2026_Week_46/tex-mex-style-sweet-potato-with-plant-based-mince-and-yoghur",
+      "title": "Tex-Mex-style sweet potato with plant-based mince and yoghurt sauce",
+      "time": "30 min active · ~57 min realistic (incl. prep)",
+      "servings": 4,
+      "kcal": 687,
+      "page": "weeks/2026_Week_46/tex-mex-style-sweet-potato-with-plant-based-mince-and-yoghur.html",
+      "pdf": "weeks/2026_Week_46/tex-mex-style-sweet-potato-with-plant-based-mince-and-yoghur.pdf"
+    },
+    {
+      "id": "2026_Week_46/risotto-with-mushrooms-red-chicory-and-vegan-parmesan",
+      "title": "Risotto with mushrooms, red chicory and vegan Parmesan",
+      "time": "35 min active · ~63 min realistic (incl. prep)",
+      "servings": 4,
+      "kcal": 357,
+      "page": "weeks/2026_Week_46/risotto-with-mushrooms-red-chicory-and-vegan-parmesan.html",
+      "pdf": "weeks/2026_Week_46/risotto-with-mushrooms-red-chicory-and-vegan-parmesan.pdf"
+    }
+  ]
+}
