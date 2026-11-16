@@ -315,9 +315,17 @@ def _set_portions(page, target_portions: int) -> bool:
 
 
 def _accept_cookies(page) -> None:
-    """Best-effort cookie acceptance; the banner may or may not appear."""
+    """Best-effort dismissal of the cookie dialog; it may or may not appear.
+
+    Declines non-essential cookies. Matches the dialog's visible buttons exactly: a
+    loose "accepteren" match hit the hidden "Alles accepteren" in the settings pane
+    first, timed out, and left the dialog blocking every click on the page.
+    """
+    modal = page.locator("#consents-modal")
     try:
-        page.get_by_text("accepteren", exact=False).first.click(timeout=4000)
+        # "Weigeren" comes before "Accepteren" in the dialog, so .first declines.
+        modal.get_by_text(re.compile(r"^(Weigeren|Accepteren)$")).first.click(timeout=4000)
+        modal.wait_for(state="hidden", timeout=4000)
     except Exception:
         pass
 
@@ -345,6 +353,7 @@ def _select_week_tab(page, week: str) -> dict:
     if week == "coming":
         return before
     label = WEEK_TABS[week]
+    _accept_cookies(page)  # the dialog can appear late and would block the click
     page.get_by_text(label, exact=True).first.click(timeout=10000)
     for _ in range(20):
         page.wait_for_timeout(500)
