@@ -56,17 +56,34 @@ jobs:
         #    holding /var/lib/apt/lists/lock and every later retry died on the lock in
         #    under a second. Running timeout under sudo with --signal=KILL, plus
         #    clearing stale locks, makes the retries actually independent.
+        # 3. Runners now read the mirror from /etc/apt/apt-mirrors.txt ("mirror+file:"),
+        #    so rewriting ubuntu.sources alone stopped working, and apt-get update only
+        #    *warned* on the unreachable mirror, so no retry ran and the later install
+        #    hung until the job timeout. Rewrite both files and make update fail on
+        #    any fetch error; the install itself is retried under the same guards.
         run: |
-          sudo sed -i 's|azure.archive.ubuntu.com|archive.ubuntu.com|g' /etc/apt/sources.list.d/ubuntu.sources || true
+          sudo sed -i 's|azure.archive.ubuntu.com|archive.ubuntu.com|g' \
+            /etc/apt/sources.list.d/ubuntu.sources /etc/apt/apt-mirrors.txt || true
+          clear_apt() {
+            sudo pkill -9 -x apt-get || true
+            sudo rm -f /var/lib/apt/lists/lock /var/lib/dpkg/lock /var/lib/dpkg/lock-frontend
+            sudo dpkg --configure -a || true
+          }
           for attempt in 1 2 3; do
             echo "apt-get update attempt $attempt..."
-            sudo timeout --signal=KILL 4m apt-get update && break
-            echo "apt-get update stalled; clearing locks before retry."
-            sudo pkill -9 -x apt-get || true
-            sudo rm -f /var/lib/apt/lists/lock /var/lib/dpkg/lock-frontend
+            sudo timeout --signal=KILL 4m apt-get update --error-on=any && break
+            echo "apt-get update failed or stalled; clearing locks before retry."
+            clear_apt
             sleep 15
           done
-          uv run playwright install-deps firefox
+          for attempt in 1 2; do
+            echo "playwright install-deps attempt $attempt..."
+            timeout --signal=KILL 8m uv run playwright install-deps firefox && exit 0
+            echo "install-deps failed or stalled; clearing locks before retry."
+            clear_apt
+            sleep 15
+          done
+          exit 1
 
       - name: Install Playwright Firefox
         # Separate from the apt work above: on a cache hit this is a no-op, so a slow
@@ -102,8 +119,9 @@ jobs:
       - name: Publish the recipe site
         # Runs even if the email failed, so the site still gets the week.
         if: always()
-        working-directory: site
         run: |
+          # An earlier failure can leave no site checkout at all.
+          cd site 2>/dev/null || { echo "No site checkout; skipping."; exit 0; }
           git add -A
           if git diff --cached --quiet; then
             echo "No site changes."
