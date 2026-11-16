@@ -326,20 +326,54 @@ def _goto(page, url: str) -> None:
     page.goto(url, wait_until="networkidle", timeout=45000)
 
 
+# Week tabs on the box listing, keyed by the `CRISP_WEEK` setting. The page opens on
+# "Komende week"; the others need a click.
+WEEK_TABS = {
+    "last": "Afgelopen keer",
+    "coming": "Komende week",
+    "after": "Over twee weken",
+}
+
+
+def _select_week_tab(page, week: str) -> dict:
+    """Switch the listing to `week`'s tab and return its box map.
+
+    Waits until the listing actually changes, so a click that silently does nothing
+    can't send the default week's recipes under another week's label.
+    """
+    before = page.evaluate(_BOX_MAP_JS)
+    if week == "coming":
+        return before
+    label = WEEK_TABS[week]
+    page.get_by_text(label, exact=True).first.click(timeout=10000)
+    for _ in range(20):
+        page.wait_for_timeout(500)
+        after = page.evaluate(_BOX_MAP_JS)
+        if after and after != before:
+            return after
+    raise ScrapeError(f"Clicking the '{label}' tab did not change the box listing")
+
+
 def scrape_current_recipes(
     settings: Optional[Settings] = None,
     *,
     box_key: Optional[str] = None,
+    week: Optional[str] = None,
     headless: bool = True,
 ) -> List[Recipe]:
     """Scrape the three recipes of the configured box from crisp.nl.
 
-    Requires Playwright + Firefox. Falls back to `settings.crisp_box` for the box.
+    Requires Playwright + Firefox. Falls back to `settings.crisp_box` for the box and
+    `settings.crisp_week` for the week tab ("coming" by default).
     """
     from playwright.sync_api import sync_playwright  # local import: heavy dependency
 
     if box_key is None:
         box_key = settings.crisp_box if settings else "vegan"
+    if week is None:
+        week = settings.crisp_week if settings else "coming"
+    if week not in WEEK_TABS:
+        raise ValueError(f"Unknown week {week!r}; expected one of {sorted(WEEK_TABS)}")
 
     recipes: List[Recipe] = []
     with sync_playwright() as pw:
@@ -347,11 +381,11 @@ def scrape_current_recipes(
         context = browser.new_context(locale="nl-NL")
         try:
             page = context.new_page()
-            log.info("Loading box listing (%s)...", box_key)
+            log.info("Loading box listing (%s, week: %s)...", box_key, week)
             _goto(page, IN_DE_BOXEN_URL)
             _accept_cookies(page)
             page.wait_for_timeout(1000)
-            box_map = page.evaluate(_BOX_MAP_JS)
+            box_map = _select_week_tab(page, week)
             hrefs = select_box_links(box_map, box_key)
             log.info("Box '%s' -> %d recipes", box_key, len(hrefs))
             if len(hrefs) != 3:

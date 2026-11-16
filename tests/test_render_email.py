@@ -114,12 +114,10 @@ def test_build_message_multipart_with_attachment(tmp_path):
     )
     assert msg["To"] == "a@example.com, b@example.com"
     assert msg["Subject"] == "Crisp recipes — Week 35, 2026"
-    # body is just a short note; the recipe lives only in the pdf attachment
+    # no body text at all; the recipe lives only in the pdf attachment
     assert msg.is_multipart()
-    body = msg.get_body(preferencelist=("plain", "html"))
-    assert body.get_content_type() == "text/plain"
-    assert "Test bowl" not in body.get_content()
-    assert msg.get_body(preferencelist=("html",)) is None
+    assert msg.get_body(preferencelist=("plain", "html")) is None
+    assert [p.get_content_type() for p in msg.iter_parts()] == ["application/pdf"]
     attachments = [p for p in msg.iter_attachments()]
     assert len(attachments) == 1
     assert attachments[0].get_filename() == "r.pdf"

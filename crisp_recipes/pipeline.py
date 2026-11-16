@@ -7,7 +7,7 @@ replaces the old top-level `main.py` / `get_recipes_crisp.py` split.
 from __future__ import annotations
 
 import logging
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 from typing import List, Optional
 
@@ -25,24 +25,32 @@ from crisp_recipes.translator import translate_recipes
 log = logging.getLogger(__name__)
 
 
-def week_label(today: Optional[date] = None) -> str:
-    """Label for the *coming* week's box (crisp delivers next week's recipes)."""
-    today = today or date.today()
-    iso = today.isocalendar()
-    return f"Week {iso.week + 1}, {iso.year}"
+# Weeks ahead of today's ISO week for each crisp.nl week tab (see scraper.WEEK_TABS).
+_WEEK_OFFSETS = {"last": 0, "coming": 1, "after": 2}
 
 
-def output_dir(today: Optional[date] = None) -> Path:
+def _box_week(today: Optional[date], week: str):
     today = today or date.today()
-    iso = today.isocalendar()
-    return Path("recipes") / f"{iso.year}_Week_{iso.week + 1}"
+    return (today + timedelta(weeks=_WEEK_OFFSETS[week])).isocalendar()
+
+
+def week_label(today: Optional[date] = None, week: str = "coming") -> str:
+    """Label for the box on `week`'s tab; by default the *coming* week's box."""
+    iso = _box_week(today, week)
+    return f"Week {iso.week}, {iso.year}"
+
+
+def output_dir(today: Optional[date] = None, week: str = "coming") -> Path:
+    iso = _box_week(today, week)
+    return Path("recipes") / f"{iso.year}_Week_{iso.week}"
 
 
 def run(settings: Optional[Settings] = None) -> List[Recipe]:
     """Run the full weekly job. Returns the enriched recipes (for tests/inspection)."""
     settings = settings or Settings.load()
-    label = week_label()
-    log.info("=== Crisp recipes: %s (box: %s) ===", label, settings.crisp_box)
+    label = week_label(week=settings.crisp_week)
+    log.info("=== Crisp recipes: %s (box: %s, tab: %s) ===",
+             label, settings.crisp_box, settings.crisp_week)
 
     recipes = scrape_current_recipes(settings)
     if not recipes:
@@ -73,7 +81,7 @@ def run(settings: Optional[Settings] = None) -> List[Recipe]:
     add_chef_notes(recipes, settings.google_api_key)
 
     log.info("Rendering PDFs...")
-    out_dir = output_dir()
+    out_dir = output_dir(week=settings.crisp_week)
     pdfs = render_all_pdfs(recipes, out_dir)
 
     if settings.site_dir:

@@ -68,6 +68,9 @@ class Settings:
 
     # Scraping / behavior
     crisp_box: str = "vegan"
+    # Which week tab on crisp.nl to read: "coming" (the scheduled run), or "last" /
+    # "after" for a manual catch-up or look-ahead run.
+    crisp_week: str = "coming"
     target_lang: str = "EN-GB"
     # Who translates the steps: "gemini" (checked, with per-step DeepL fallback) or
     # "deepl". Title and ingredient names always go to DeepL.
@@ -98,6 +101,7 @@ class Settings:
             sender_email=_require("SENDER_EMAIL"),
             recipients=_split_recipients(_require("RECIPIENTS")),
             crisp_box=_optional("CRISP_BOX", "vegan"),
+            crisp_week=_optional("CRISP_WEEK", "coming").lower(),
             target_lang=_optional("TARGET_LANG", "EN-GB"),
             step_translator=_optional("STEP_TRANSLATOR", "gemini").lower(),
             target_portions=int(_optional("TARGET_PORTIONS", "4")),

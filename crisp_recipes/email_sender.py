@@ -1,7 +1,7 @@
 """Send the weekly recipes as per-recipe PDF attachments.
 
 Credentials and recipients come from `Settings` (env / GitHub secrets) — nothing is
-hardcoded. The body is a one-line note; the recipes themselves live only in the PDFs.
+hardcoded. The message has no body text; the recipes live only in the PDFs.
 """
 from __future__ import annotations
 
@@ -28,7 +28,7 @@ def build_message(
     msg["From"] = sender
     msg["To"] = ", ".join(recipients)
 
-    msg.set_content(f"This week's recipes ({week_label}) are attached as PDFs.")
+    # No body at all: the recipes live only in the attached PDFs.
 
     for path in pdf_paths or []:
         path = Path(path)

@@ -6,6 +6,12 @@ on:
     # leaving time to plan before delivery.
     - cron: "0 7 * * 3"
   workflow_dispatch:        # lets you trigger a run by hand from the Actions tab
+    inputs:
+      week:
+        description: "Which crisp.nl week tab to send: coming (default), last (catch up a missed week) or after"
+        type: choice
+        options: [coming, last, after]
+        default: coming
 
 # Avoid two runs overlapping if a manual run is triggered near the schedule.
 concurrency:
@@ -110,6 +116,7 @@ jobs:
           RECIPIENTS: ${{ secrets.RECIPIENTS }}
           # Optional overrides (safe to leave unset):
           CRISP_BOX: ${{ vars.CRISP_BOX }}
+          CRISP_WEEK: ${{ inputs.week }}   # empty on the schedule -> "coming"
           TARGET_PORTIONS: ${{ vars.TARGET_PORTIONS }}
           SITE_DIR: site
           SITE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
