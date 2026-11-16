@@ -1,0 +1,33 @@
+{
+  "week": "2026_Week_47",
+  "label": "Week 47, 2026",
+  "recipes": [
+    {
+      "id": "2026_Week_47/turmeric-orzo-in-tomato-sauce-with-olives-spinach-sweetcorn",
+      "title": "Turmeric orzo in tomato sauce with olives, spinach, sweetcorn and hazelnuts",
+      "time": "25 min",
+      "servings": 4,
+      "kcal": 556,
+      "page": "weeks/2026_Week_47/turmeric-orzo-in-tomato-sauce-with-olives-spinach-sweetcorn.html",
+      "pdf": "weeks/2026_Week_47/turmeric-orzo-in-tomato-sauce-with-olives-spinach-sweetcorn.pdf"
+    },
+    {
+      "id": "2026_Week_47/ciabatta-with-seitan-kebab-pickled-fennel-baby-potatoes-and",
+      "title": "Ciabatta with seitan kebab, pickled fennel, baby potatoes and a red chicory and spinach salad",
+      "time": "30 min active · ~62 min realistic (incl. prep)",
+      "servings": 4,
+      "kcal": 463,
+      "page": "weeks/2026_Week_47/ciabatta-with-seitan-kebab-pickled-fennel-baby-potatoes-and.html",
+      "pdf": "weeks/2026_Week_47/ciabatta-with-seitan-kebab-pickled-fennel-baby-potatoes-and.pdf"
+    },
+    {
+      "id": "2026_Week_47/caramelised-fennel-with-creamy-mash-lentils-yellow-cabbage-a",
+      "title": "Caramelised fennel with creamy mash, lentils, yellow cabbage and flaked almonds",
+      "time": "30 min active · ~65 min realistic (incl. prep)",
+      "servings": 4,
+      "kcal": null,
+      "page": "weeks/2026_Week_47/caramelised-fennel-with-creamy-mash-lentils-yellow-cabbage-a.html",
+      "pdf": "weeks/2026_Week_47/caramelised-fennel-with-creamy-mash-lentils-yellow-cabbage-a.pdf"
+    }
+  ]
+}
