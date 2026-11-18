@@ -1,6 +1,39 @@
 {
   "weeks": [
     {
+      "week": "2026_Week_48",
+      "label": "Week 48, 2026",
+      "recipes": [
+        {
+          "id": "2026_Week_48/mini-kofte-burger-with-fried-potatoes-leek-fennel-and-dill-y",
+          "title": "Mini köfte burger with fried potatoes, leek, fennel and dill yoghurt sauce",
+          "time": "25 min active · ~53 min realistic (incl. prep)",
+          "servings": 4,
+          "kcal": 1209,
+          "page": "weeks/2026_Week_48/mini-kofte-burger-with-fried-potatoes-leek-fennel-and-dill-y.html",
+          "pdf": "weeks/2026_Week_48/mini-kofte-burger-with-fried-potatoes-leek-fennel-and-dill-y.pdf"
+        },
+        {
+          "id": "2026_Week_48/creamy-pasta-with-brussels-sprouts-sweet-potato-portobello-m",
+          "title": "Creamy pasta with Brussels sprouts, sweet potato, portobello mushrooms and sunflower seed crunch",
+          "time": "30 min active · ~57 min realistic (incl. prep)",
+          "servings": 4,
+          "kcal": 566,
+          "page": "weeks/2026_Week_48/creamy-pasta-with-brussels-sprouts-sweet-potato-portobello-m.html",
+          "pdf": "weeks/2026_Week_48/creamy-pasta-with-brussels-sprouts-sweet-potato-portobello-m.pdf"
+        },
+        {
+          "id": "2026_Week_48/linzendahl-with-pak-choi-rainbow-carrots-and-cashew-nuts",
+          "title": "Linzendahl with pak choi, rainbow carrots and cashew nuts",
+          "time": "35 min active · ~52 min realistic (incl. prep)",
+          "servings": 4,
+          "kcal": 902,
+          "page": "weeks/2026_Week_48/linzendahl-with-pak-choi-rainbow-carrots-and-cashew-nuts.html",
+          "pdf": "weeks/2026_Week_48/linzendahl-with-pak-choi-rainbow-carrots-and-cashew-nuts.pdf"
+        }
+      ]
+    },
+    {
       "week": "2026_Week_47",
       "label": "Week 47, 2026",
       "recipes": [
