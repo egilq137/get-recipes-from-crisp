@@ -1,6 +1,39 @@
 {
   "weeks": [
     {
+      "week": "2026_Week_49",
+      "label": "Week 49, 2026",
+      "recipes": [
+        {
+          "id": "2026_Week_49/pumpkin-curry-with-lentils-amsoi-and-lime",
+          "title": "Pumpkin curry with lentils, amsoi and lime",
+          "time": "35 min active · ~67 min realistic (incl. prep)",
+          "servings": 4,
+          "kcal": 565,
+          "page": "weeks/2026_Week_49/pumpkin-curry-with-lentils-amsoi-and-lime.html",
+          "pdf": "weeks/2026_Week_49/pumpkin-curry-with-lentils-amsoi-and-lime.pdf"
+        },
+        {
+          "id": "2026_Week_49/spicy-sauerkraut-dish-with-yacon-sweet-potato-puree-vegetabl",
+          "title": "Spicy sauerkraut dish with yacon, sweet potato purée, vegetable bacon bits and fried onions",
+          "time": "25 min active · ~35 min realistic (incl. prep)",
+          "servings": 4,
+          "kcal": 482,
+          "page": "weeks/2026_Week_49/spicy-sauerkraut-dish-with-yacon-sweet-potato-puree-vegetabl.html",
+          "pdf": "weeks/2026_Week_49/spicy-sauerkraut-dish-with-yacon-sweet-potato-puree-vegetabl.pdf"
+        },
+        {
+          "id": "2026_Week_49/queen-butter-beans-in-soffritto-with-no-waste-kale-pasta-fen",
+          "title": "Queen Butter beans in soffritto with No Waste kale pasta, fennel salad and homemade cashew parmesan",
+          "time": "30 min active · ~72 min realistic (incl. prep)",
+          "servings": 4,
+          "kcal": 333,
+          "page": "weeks/2026_Week_49/queen-butter-beans-in-soffritto-with-no-waste-kale-pasta-fen.html",
+          "pdf": "weeks/2026_Week_49/queen-butter-beans-in-soffritto-with-no-waste-kale-pasta-fen.pdf"
+        }
+      ]
+    },
+    {
       "week": "2026_Week_48",
       "label": "Week 48, 2026",
       "recipes": [
